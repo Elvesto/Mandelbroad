@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "render.h"
 
+#include <stdio.h>
 
 static const int screenWidth = 800;
 static const int screenHeight = 600;
@@ -8,19 +9,18 @@ static const int screenHeight = 600;
 static void CalcMandelWrote(MandelWrote* view);
 
 int Render() {
-    
     InitWindow(screenWidth, screenHeight, "Window");
     RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
-
+    
     MandelWrote view = {};
-    view.maxIterations = 200;
+    view.maxIterations = 100;
     view.offsetX = -0.5;
     view.offsetY = 0;
     view.zoom = 1.0;
     
     while (!WindowShouldClose()) {
-
         HandleInput(&view);
+        
     
         BeginTextureMode(target);
         ClearBackground(BLACK);
@@ -68,6 +68,5 @@ static void CalcMandelWrote(MandelWrote* view) {
                 DrawPixel(px, py, PURPLE);
             }
         }
-    
     }
 }

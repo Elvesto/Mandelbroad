@@ -11,23 +11,23 @@
 static const int screenWidth = 800;
 static const int screenHeight = 600;
 
-static double zoom = 1.0;
-static double offsetX = -0.5; 
-static double offsetY = 0.0;
-static int maxIterations = 200;
-
-static int Calculate(Color* buffer, int countPix);
+static int Calculate(Color* buffer, int countPix, MandelWrote* view);
 
 int Render() {
     int countPix = screenHeight * screenWidth;
     Color* buffer = (Color*)calloc(countPix, sizeof(Color));
     if (buffer == NULL) { return -1; }
 
+    MandelWrote view = {};
+    view.maxIterations = 100;
+    view.offsetX = -0.5;
+    view.offsetY = 0;
+    view.zoom = 1.0;
+
     #ifdef GMODE
     InitWindow(screenWidth, screenHeight, "Window");
     RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
     
-    Color color = (Color) {GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), 255};
     
 
     Image image = GenImageColor(screenWidth, screenHeight, BLACK);
@@ -37,16 +37,9 @@ int Render() {
     
 
     while (!WindowShouldClose()) {
-        if (IsKeyDown(KEY_UP)) zoom *= 1.05;
-        if (IsKeyDown(KEY_DOWN)) zoom /= 1.05;
-        if (IsKeyDown(KEY_D)) offsetX += 0.1 / zoom;
-        if (IsKeyDown(KEY_A)) offsetX -= 0.1 / zoom;
-        if (IsKeyDown(KEY_W)) offsetY -= 0.1 / zoom;
-        if (IsKeyDown(KEY_S)) offsetY += 0.1 / zoom;
-        if (IsKeyDown(KEY_Q)) maxIterations -= 5;
-        if (IsKeyDown(KEY_E)) maxIterations += 5;
+        HandleInput(&view);
         
-        Calculate(buffer, countPix);
+        Calculate(buffer, countPix, &view);
 
         UpdateTexture(texture, buffer);
 
@@ -63,20 +56,23 @@ int Render() {
 
     #else
 
-    int64_t start = 0, end = 0;
+    uint64_t start = 0, end = 0;
     double res = 0;
-    int n = 0;
-    scanf("%d", &n);
+    int n = 5000;
     
-    start = __rdtsc();
+    
     for (int i = 0; i < n; i++) {
-        Calculate(buffer, countPix);
+        start = __rdtsc();
+        
+        Calculate(buffer, countPix, &view);
+        
+        end = __rdtsc();
+        
+        res = (end - start) / (double)n;
+
+        printf("%d,%lf\n", i, res);
+        
     }
-    end = __rdtsc();
-
-    res = (end - start) / (double)n;
-
-    printf("%lf\n", res);
     
     #endif
 
@@ -84,7 +80,7 @@ int Render() {
     return 0;
 }
 
-int Calculate(Color* buffer, int countPix) {
+int Calculate(Color* buffer, int countPix, MandelWrote* view) {
 
 
     for (int i = 0; i < countPix; i += 8) {
@@ -98,8 +94,8 @@ int Calculate(Color* buffer, int countPix) {
             int px = index % screenWidth;
             int py = index / screenWidth;
 
-            tempX[j] = (float)((px - screenWidth / 2.0) / (0.3 * zoom * screenWidth) + offsetX);
-            tempY[j] = (float)((py - screenHeight / 2.0) / (0.3 * zoom * screenHeight) + offsetY);
+            tempX[j] = (float)((px - screenWidth / 2.0) / (0.3 * view->zoom * screenWidth) + view->offsetX);
+            tempY[j] = (float)((py - screenHeight / 2.0) / (0.3 * view->zoom * screenHeight) + view->offsetY);
         }
 
         m256 x0 = {tempX[0], tempX[1], tempX[2], tempX[3], tempX[4], tempX[5], tempX[6], tempX[7]};
@@ -109,7 +105,7 @@ int Calculate(Color* buffer, int countPix) {
         m256 four = mm_set1_ps(4);
         m256i iters = {0, 0, 0, 0, 0, 0, 0, 0};
 
-        for (int iteration = 0; iteration < maxIterations; iteration++) {
+        for (int iteration = 0; iteration < view->maxIterations; iteration++) {
 
             m256 x2 = mm_mul_ps(x, x);
             m256 y2 = mm_mul_ps(y, y);
@@ -140,8 +136,8 @@ int Calculate(Color* buffer, int countPix) {
             if (i + j >= countPix) { break; }
 
             int iteration = iters.value[j];
-            if (iteration < maxIterations) {
-                unsigned char val = (unsigned char)(255 * iteration / maxIterations);
+            if (iteration < view->maxIterations) {
+                unsigned char val = (unsigned char)(255 * iteration / view->maxIterations);
                 buffer[i + j] = (Color){ val, 0, val, 255 };
             } else {
                 buffer[i + j] = PURPLE;

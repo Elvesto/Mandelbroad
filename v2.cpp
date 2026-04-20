@@ -4,10 +4,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <immintrin.h>
+#include <stdint.h>
 
 
-static const int screenWidth = 200;
-static const int screenHeight = 150;
+static const int screenWidth = 800;
+static const int screenHeight = 600;
 
 static int Calculate(Color* buffer, int countPix, MandelWrote* view);
 
@@ -56,20 +57,23 @@ int Render() {
 
     #else
 
-    int64_t start = 0, end = 0;
+    uint64_t start = 0, end = 0;
     double res = 0;
-    int n = 0;
-    scanf("%d", &n);
+    int n = 5000;
     
-    start = __rdtsc();
+    
     for (int i = 0; i < n; i++) {
+        start = __rdtsc();
+        
         Calculate(buffer, countPix, &view);
+        
+        end = __rdtsc();
+        
+        res = (end - start) / (double)n;
+
+        printf("%d,%lf\n", i, res);
+        
     }
-    end = __rdtsc();
-
-    res = (end - start) / (double)n;
-
-    printf("%lf\n", res);
     
     #endif
 
