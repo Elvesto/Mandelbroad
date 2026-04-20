@@ -8,81 +8,7 @@
 
 #include "immit.h"
 
-static const int screenWidth = 800;
-static const int screenHeight = 600;
-
-static int Calculate(Color* buffer, int countPix, MandelWrote* view);
-
-int Render() {
-    int countPix = screenHeight * screenWidth;
-    Color* buffer = (Color*)calloc(countPix, sizeof(Color));
-    if (buffer == NULL) { return -1; }
-
-    MandelWrote view = {};
-    view.maxIterations = 100;
-    view.offsetX = -0.5;
-    view.offsetY = 0;
-    view.zoom = 1.0;
-
-    #ifdef GMODE
-    InitWindow(screenWidth, screenHeight, "Window");
-    RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
-    
-    
-
-    Image image = GenImageColor(screenWidth, screenHeight, BLACK);
-    Texture2D texture = LoadTextureFromImage(image);
-    UnloadImage(image);
-
-    
-
-    while (!WindowShouldClose()) {
-        HandleInput(&view);
-        
-        Calculate(buffer, countPix, &view);
-
-        UpdateTexture(texture, buffer);
-
-        BeginDrawing();
-        ClearBackground(BLACK);
-        DrawTexture(texture, 0, 0, WHITE);
-        DrawFPS(10, 10);
-        EndDrawing();
-
-    }
-    
-    free(buffer);
-    CloseWindow();
-
-    #else
-
-    uint64_t start = 0, end = 0;
-    double res = 0;
-    int n = 5000;
-    
-    
-    for (int i = 0; i < n; i++) {
-        start = __rdtsc();
-        
-        Calculate(buffer, countPix, &view);
-        
-        end = __rdtsc();
-        
-        res = (end - start) / (double)n;
-
-        printf("%d,%lf\n", i, res);
-        
-    }
-    
-    #endif
-
-
-    return 0;
-}
-
 int Calculate(Color* buffer, int countPix, MandelWrote* view) {
-
-
     for (int i = 0; i < countPix; i += 8) {
         
         float tempX[8] = {};
@@ -91,11 +17,11 @@ int Calculate(Color* buffer, int countPix, MandelWrote* view) {
             int index = i + j;
             if (index >= countPix) { break; }
 
-            int px = index % screenWidth;
-            int py = index / screenWidth;
+            int px = index % view->screenWidth;
+            int py = index / view->screenWidth;
 
-            tempX[j] = (float)((px - screenWidth / 2.0) / (0.3 * view->zoom * screenWidth) + view->offsetX);
-            tempY[j] = (float)((py - screenHeight / 2.0) / (0.3 * view->zoom * screenHeight) + view->offsetY);
+            tempX[j] = (float)((px - view->screenWidth / 2.0) / (0.3 * view->zoom * view->screenWidth) + view->offsetX);
+            tempY[j] = (float)((py - view->screenHeight / 2.0) / (0.3 * view->zoom * view->screenHeight) + view->offsetY);
         }
 
         m256 x0 = {tempX[0], tempX[1], tempX[2], tempX[3], tempX[4], tempX[5], tempX[6], tempX[7]};
